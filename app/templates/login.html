@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SVETLANA AI DJ STUDIO</title>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/studio.css') }}">
+</head>
+<body class="login-page">
+  <form method="post" class="card login">
+    <div class="brand big"><span class="brand-main">SVETLANA</span><span class="brand-sub">AI DJ STUDIO</span></div>
+    <label>Mot de passe<input type="password" name="password" autofocus required></label>
+    {% if error %}<div class="error">{{ error }}</div>{% endif %}
+    <button class="btn big" type="submit">Entrer dans le studio</button>
+  </form>
+</body>
+</html>

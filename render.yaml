@@ -1,0 +1,24 @@
+# Blueprint Render : New → Blueprint → sélectionner ce dépôt GitHub.
+services:
+  - type: web
+    name: svetlana-ai-dj-studio
+    runtime: docker
+    plan: starter            # nécessaire pour le disque persistant (le plan free efface les fichiers)
+    region: frankfurt
+    healthCheckPath: /healthz
+    autoDeploy: true
+    disk:
+      name: svetlana-data
+      mountPath: /var/data
+      sizeGB: 10
+    envVars:
+      - key: APP_SECRET_KEY
+        generateValue: true  # chiffre les clés API saisies dans l'interface
+      - key: STUDIO_PASSWORD
+        sync: false          # Render vous le demandera à la création
+      - key: FAL_KEY
+        sync: false          # optionnel : peut aussi être saisi dans Réglages
+      - key: DEFAULT_PROVIDER
+        value: demo
+      - key: DATA_DIR
+        value: /var/data

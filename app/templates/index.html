@@ -1,0 +1,225 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SVETLANA AI DJ STUDIO</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/studio.css') }}">
+</head>
+<body>
+<header class="topbar">
+  <div class="brand"><span class="brand-main">SVETLANA</span><span class="brand-sub">AI DJ STUDIO</span></div>
+  <nav>
+    <button class="tab active" data-view="identity">1 · Identité</button>
+    <button class="tab" data-view="projects">2 · Projets</button>
+    <button class="tab" data-view="settings">Réglages</button>
+  </nav>
+  <a class="logout" href="/logout" title="Déconnexion">⏻</a>
+</header>
+
+<div id="warnings"></div>
+
+<main>
+  <!-- ======================== IDENTITÉ ======================== -->
+  <section id="view-identity" class="view active">
+    <div class="grid-2">
+      <div class="card">
+        <h2>Photo officielle</h2>
+        <p class="hint">Image de référence du visage de SVETLANA : de face, nette, bien éclairée, haute résolution. Elle sert de point de départ à toutes les générations.</p>
+        <label class="drop" id="ref-drop">
+          <img id="ref-preview" alt="">
+          <span class="drop-txt">Cliquer ou déposer une photo (JPG / PNG / WEBP)</span>
+          <input type="file" id="ref-input" accept="image/*" hidden>
+        </label>
+        <h3>Références complémentaires <small>(profil, 3/4, plan taille… max 6)</small></h3>
+        <div class="thumbs" id="extra-list"></div>
+        <label class="btn ghost small">+ Ajouter des références<input type="file" id="extra-input" accept="image/*" multiple hidden></label>
+      </div>
+      <div class="card">
+        <h2>Fiche d'identité</h2>
+        <label>Nom de scène<input id="id-name" type="text"></label>
+        <label>Description visuelle (anglais, injectée dans chaque prompt)
+          <textarea id="id-desc" rows="7"></textarea>
+        </label>
+        <button class="btn" id="id-save">Enregistrer l'identité</button>
+        <h3>Logo</h3>
+        <div class="logo-box"><img id="logo-preview" alt="logo"></div>
+        <div class="row">
+          <label class="btn ghost small">Importer un PNG transparent<input type="file" id="logo-input" accept="image/png" hidden></label>
+          <button class="btn ghost small" id="logo-reset">Logo par défaut</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================== PROJETS ======================== -->
+  <section id="view-projects" class="view">
+    <div class="grid-2 narrow-right">
+      <div class="card">
+        <h2>Mes vidéos</h2>
+        <div id="project-list" class="project-list"></div>
+      </div>
+      <div class="card">
+        <h2>Nouveau projet</h2>
+        <label>Scénario<select id="np-template"></select></label>
+        <label>Titre<input id="np-title" placeholder="SVETLANA — THE AWAKENING"></label>
+        <label>Environnement<select id="np-env"></select></label>
+        <label>Format de génération<select id="np-aspect">
+          <option value="9:16">9:16 vertical (TikTok / Reels / Shorts)</option>
+          <option value="16:9">16:9 horizontal (YouTube)</option></select></label>
+        <label>Moteur<select id="np-provider"></select></label>
+        <button class="btn" id="np-create">Créer le projet</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================== ÉDITEUR ======================== -->
+  <section id="view-editor" class="view">
+    <div class="editor-head card">
+      <button class="btn ghost small" id="ed-back">← Projets</button>
+      <input id="ed-title" class="title-input">
+      <div class="spent">Dépensé : <b id="ed-spent">0 $</b> · Estimation restante : <b id="ed-estimate">0 $</b></div>
+      <button class="btn ghost small danger" id="ed-delete">Supprimer</button>
+    </div>
+
+    <div class="grid-3">
+      <div class="card">
+        <h3>Moteur IA</h3>
+        <label>Fournisseur<select id="ed-provider"></select></label>
+        <label>Modèle vidéo<select id="ed-video-model"></select></label>
+        <label>Modèle keyframe (image)<select id="ed-image-model"></select></label>
+      </div>
+      <div class="card">
+        <h3>Cadre</h3>
+        <label>Environnement<select id="ed-env"></select></label>
+        <label>Format de génération<select id="ed-aspect">
+          <option value="9:16">9:16 vertical</option><option value="16:9">16:9 horizontal</option></select></label>
+        <label>Adaptation à l'autre format<select id="ed-fit">
+          <option value="cover">Recadrer (plein écran)</option>
+          <option value="blur">Fond flou (image entière)</option></select></label>
+      </div>
+      <div class="card">
+        <h3>Durée & drop</h3>
+        <label>Durée vidéo (s)<input id="ed-duration" type="number" step="0.5" min="1" max="180"></label>
+        <label>Drop dans la vidéo à (s)<input id="ed-dropat" type="number" step="0.1" min="0"></label>
+        <button class="btn ghost small" id="ed-rebuild">Régénérer tous les prompts</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Musique</h2>
+      <div class="row wrap">
+        <label class="btn">Importer MP3 / WAV<input type="file" id="audio-input" accept="audio/*,.wav,.mp3,.flac,.m4a" hidden></label>
+        <div id="audio-info" class="audio-info">Aucune musique – importez votre production Suno.</div>
+      </div>
+      <canvas id="wave" height="110"></canvas>
+      <div class="row wrap">
+        <label class="inline">Début de l'extrait (s)<input id="ed-astart" type="number" step="0.01" min="0"></label>
+        <button class="btn ghost small" id="audio-auto">Caler le drop automatiquement</button>
+        <button class="btn ghost small" id="audio-play">▶ Écouter l'extrait</button>
+        <audio id="player" preload="auto"></audio>
+      </div>
+      <p class="hint">Cliquez sur la forme d'onde pour placer le début de l'extrait. Les traits rouges = drops détectés, gris = premiers temps de mesure.</p>
+    </div>
+
+    <div class="card">
+      <div class="row space">
+        <h2>Timeline</h2>
+        <div class="row">
+          <button class="btn ghost small" id="add-shot">+ Plan</button>
+          <button class="btn ghost small" id="gen-keyframes">Générer toutes les keyframes</button>
+          <button class="btn small" id="gen-clips">Générer tous les clips</button>
+        </div>
+      </div>
+      <div id="timeline" class="timeline"></div>
+      <div id="shots"></div>
+    </div>
+
+    <div class="card">
+      <h2>Logo, montage & export</h2>
+      <div class="grid-3 tight">
+        <label>Affichage du logo<select id="ed-logo-mode">
+          <option value="drop">Grand logo au drop</option>
+          <option value="watermark">Filigrane permanent</option>
+          <option value="both">Filigrane + grand logo au drop</option>
+          <option value="none">Aucun</option></select></label>
+        <label>Apparition du logo (s)<input id="ed-logo-at" type="number" step="0.1" min="0"></label>
+        <div>
+          <span class="lbl">Formats</span>
+          <label class="check"><input type="checkbox" value="vertical" class="fmt" checked> 9:16 (TikTok / Reels / Shorts)</label>
+          <label class="check"><input type="checkbox" value="horizontal" class="fmt"> 16:9 (YouTube)</label>
+        </div>
+      </div>
+      <button class="btn big" id="render">Monter & exporter la vidéo</button>
+      <div class="progress" id="render-progress" hidden><div></div><span></span></div>
+      <div id="outputs" class="outputs"></div>
+    </div>
+  </section>
+
+  <!-- ======================== RÉGLAGES ======================== -->
+  <section id="view-settings" class="view">
+    <div class="grid-2">
+      <div class="card">
+        <h2>Clés API</h2>
+        <p class="hint">Les clés sont chiffrées sur le serveur et ne sont jamais renvoyées au navigateur. Sur Render, préférez la variable d'environnement <code>FAL_KEY</code>.</p>
+        <div id="secrets"></div>
+      </div>
+      <div class="card">
+        <h2>Fournisseurs & tarifs indicatifs</h2>
+        <div id="models-table"></div>
+        <p class="hint">Tarifs à vérifier sur fal.ai/pricing. Pour corriger un endpoint ou un prix sans toucher au code, créez <code>DATA_DIR/models.json</code> (voir README).</p>
+      </div>
+    </div>
+  </section>
+</main>
+
+<template id="shot-tpl">
+  <div class="shot">
+    <div class="shot-head">
+      <span class="shot-num"></span>
+      <input class="s-label">
+      <label class="inline">de<input class="s-start" type="number" step="0.1" min="0"></label>
+      <label class="inline">à<input class="s-end" type="number" step="0.1" min="0"></label>
+      <span class="status"></span>
+      <button class="btn ghost small danger s-remove" title="Supprimer le plan">✕</button>
+    </div>
+    <div class="shot-body">
+      <div class="shot-media">
+        <div class="media-box keyframe"><span>Keyframe</span><img alt=""></div>
+        <div class="row">
+          <button class="btn ghost small s-gen-kf">Générer keyframe</button>
+          <label class="btn ghost small">Importer<input type="file" class="s-up-kf" accept="image/*" hidden></label>
+        </div>
+        <label class="check"><input type="checkbox" class="s-use-kf"> Partir de la keyframe (sinon photo officielle)</label>
+      </div>
+      <div class="shot-media">
+        <div class="media-box clip"><span>Clip vidéo</span><video muted loop playsinline controls></video></div>
+        <div class="row">
+          <button class="btn small s-gen-clip">Générer clip</button>
+          <label class="btn ghost small">Importer<input type="file" class="s-up-clip" accept="video/*" hidden></label>
+        </div>
+        <select class="s-takes"></select>
+      </div>
+      <div class="shot-fields">
+        <div class="grid-4 tight">
+          <label>Geste<select class="s-action"></select></label>
+          <label>Caméra<select class="s-camera"></select></label>
+          <label>Lieu<select class="s-env"></select></label>
+          <label>Transition d'entrée<select class="s-trans"></select></label>
+        </div>
+        <div class="effects"></div>
+        <label>Prompt vidéo <button class="link s-rebuild">↻ reconstruire</button><textarea class="s-prompt" rows="4"></textarea></label>
+        <label>Prompt keyframe<textarea class="s-kf-prompt" rows="3"></textarea></label>
+        <details><summary>Prompt négatif</summary><textarea class="s-neg" rows="2"></textarea></details>
+        <div class="error"></div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<div id="toast"></div>
+<script src="{{ url_for('static', filename='js/studio.js') }}"></script>
+</body>
+</html>
