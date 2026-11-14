@@ -12,8 +12,15 @@ Principe :
   3. Logo, fondu final, musique (normalisée à -14 LUFS pour les réseaux).
 """
 import json
+import os
 import subprocess
+import threading
 from pathlib import Path
+
+# Nombre de processus FFmpeg simultanés (1 sur Render Starter / 512 Mo).
+FFMPEG_SLOTS = threading.Semaphore(max(1, int(os.environ.get("FFMPEG_JOBS", "1"))))
+# Threads par encodeur : limite la mémoire de libx264 sur les petites instances.
+X264_THREADS = os.environ.get("FFMPEG_THREADS", "1")
 
 FPS = 30
 IMAGE_EXT = {".jpg", ".jpeg", ".png", ".webp"}
@@ -32,7 +39,19 @@ class RenderError(RuntimeError):
 
 
 def run(cmd: list[str]):
-    proc = subprocess.run(cmd, capture_output=True)
+    # Limite les threads (décodage, filtres, encodage) : sur une machine à
+    # beaucoup de cœurs, FFmpeg alloue des tampons d'images par thread et la
+    # mémoire explose. Valeurs mesurées : < 350 Mo par processus en 1080×1920.
+    out = [cmd[0], "-filter_threads", X264_THREADS]
+    for arg in cmd[1:]:
+        if arg == "-i":
+            out += ["-threads", X264_THREADS]
+        out.append(arg)
+        if arg == "libx264":
+            out += ["-threads", X264_THREADS]
+    cmd = out
+    with FFMPEG_SLOTS:
+        proc = subprocess.run(cmd, capture_output=True)
     if proc.returncode != 0:
         raise RenderError("FFmpeg : " + proc.stderr.decode(errors="ignore")[-1200:])
     return proc
@@ -131,9 +150,14 @@ def render_project(project: dict, pdir: Path, fmt_key: str, logo_path: Path | No
     work.mkdir(exist_ok=True)
     (pdir / "exports").mkdir(exist_ok=True)
     duration = float(project["duration"])
-    shots = sorted(project["shots"], key=lambda s: float(s["start"]))
+    shots = [dict(s) for s in sorted(project["shots"], key=lambda s: float(s["start"]))
+             if float(s["start"]) < duration]
     if not shots:
         raise RenderError("Aucun plan à monter")
+    # Timeline continue : chaque plan s'arrête où commence le suivant
+    shots[0]["start"] = 0.0
+    for a, b in zip(shots[:-1], shots[1:]):
+        a["end"] = float(b["start"])
 
     # -------- grille de temps dans le référentiel de la vidéo
     analysis = project.get("analysis") or {}
@@ -217,27 +241,48 @@ def render_project(project: dict, pdir: Path, fmt_key: str, logo_path: Path | No
                  "-c", "copy", str(shot_file)])
         shot_files.append(shot_file)
 
-    # -------- assemblage final
+    # -------- assemblage de la piste vidéo
+    # Chaque transition est rendue séparément (quelques images), puis tous les
+    # segments sont mis bout à bout. On évite ainsi de décoder tous les plans en
+    # parallèle, ce qui saturait la mémoire (≈ 900 Mo en 1080×1920).
     if progress:
         progress((total_pieces + 1) / (total_pieces + 2), "Assemblage, logo et musique")
-    inputs = []
-    for f in shot_files:
-        inputs += ["-i", str(f)]
-    filters = []
-    for i in range(len(shot_files)):
-        filters.append(f"[{i}:v]fps={FPS},format=yuv420p,setsar=1,settb=AVTB,setpts=PTS-STARTPTS[s{i}]")
-    acc = "[s0]"
-    for i in range(1, len(shot_files)):
-        t = trans[i]
-        out = f"[x{i}]"
-        if t in TRANSITION_DURATION:
-            off = float(shots[i]["start"])
-            filters.append(f"{acc}[s{i}]xfade=transition={t}:duration={TRANSITION_DURATION[t]}:offset={off:.3f}{out}")
-        else:
-            filters.append(f"{acc}[s{i}]concat=n=2:v=1:a=0{out}")
-        acc = out
+    F = lambda t: round(t * FPS)  # noqa: E731
+    enc = ["-an", "-c:v", "libx264", "-preset", "veryfast", "-crf", "14", "-pix_fmt", "yuv420p", "-r", str(FPS)]
+    segments = []
+    for i, f in enumerate(shot_files):
+        t_in = TRANSITION_DURATION.get(trans[i], 0.0) if i > 0 else 0.0
+        a = F(t_in) if t_in else 0
+        b = F(float(shots[i]["end"])) - F(float(shots[i]["start"]))
+        if b > a:
+            seg = work / f"{fmt_key}_seg{i:02d}a.mp4"
+            run([ffmpeg, "-y", "-v", "error", "-i", str(f), "-filter_complex",
+                 f"[0:v]trim=start_frame={a},setpts=PTS-STARTPTS,"
+                 f"tpad=stop_mode=clone:stop_duration=2,setsar=1[v]",
+                 "-map", "[v]", "-frames:v", str(b - a), *enc, str(seg)])
+            segments.append(seg)
+        if i + 1 < len(shot_files) and trans[i + 1] in TRANSITION_DURATION:
+            T = TRANSITION_DURATION[trans[i + 1]]
+            tf = F(T)
+            seg = work / f"{fmt_key}_seg{i:02d}b.mp4"
+            run([ffmpeg, "-y", "-v", "error", "-i", str(f), "-i", str(shot_files[i + 1]), "-filter_complex",
+                 f"[0:v]trim=start_frame={b},setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=2,"
+                 f"fps={FPS},settb=AVTB,setsar=1[a];"
+                 f"[1:v]trim=end_frame={tf + 2},setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=2,"
+                 f"fps={FPS},settb=AVTB,setsar=1[b];"
+                 f"[a][b]xfade=transition={trans[i + 1]}:duration={T}:offset=0,format=yuv420p[v]",
+                 "-map", "[v]", "-frames:v", str(tf), *enc, str(seg)])
+            segments.append(seg)
+    video_track = work / f"{fmt_key}_video.mp4"
+    lst = work / f"{fmt_key}_segments.txt"
+    lst.write_text("".join(f"file '{p.name}'\n" for p in segments))
+    run([ffmpeg, "-y", "-v", "error", "-f", "concat", "-safe", "0", "-i", str(lst), "-c", "copy", str(video_track)])
 
-    idx = len(shot_files)
+    inputs = ["-i", str(video_track)]
+    filters = [f"[0:v]setsar=1[base]"]
+    acc = "[base]"
+
+    idx = 1
     logo_cfg = project.get("logo") or {}
     mode = logo_cfg.get("mode", "drop")
     if logo_path and Path(logo_path).exists() and mode != "none":
@@ -267,25 +312,28 @@ def render_project(project: dict, pdir: Path, fmt_key: str, logo_path: Path | No
     fade_out = min(0.5, duration / 10)
     filters.append(f"{acc}fade=out:st={duration - fade_out:.3f}:d={fade_out:.3f},format=yuv420p[vout]")
 
+    # Musique traitée à part (normalisation -14 LUFS) pour alléger l'encodage final
     audio = project.get("audio")
+    audio_track = work / f"{fmt_key}_audio.m4a"
+    fo = min(0.8, duration / 6)
     if audio and (pdir / audio).exists():
-        inputs += ["-ss", f"{audio_start:.3f}", "-t", f"{duration + 0.5:.3f}", "-i", str(pdir / audio)]
-        fo = min(0.8, duration / 6)
-        filters.append(
-            f"[{idx}:a]atrim=0:{duration:.3f},asetpts=PTS-STARTPTS,afade=in:d=0.02,"
-            f"afade=out:st={duration - fo:.3f}:d={fo:.3f},loudnorm=I=-14:TP=-1.0:LRA=11,"
-            f"aresample=48000[aout]"
-        )
+        run([ffmpeg, "-y", "-v", "error", "-ss", f"{audio_start:.3f}", "-t", f"{duration + 0.5:.3f}",
+             "-i", str(pdir / audio), "-af",
+             f"atrim=0:{duration:.3f},asetpts=PTS-STARTPTS,afade=in:d=0.02,"
+             f"afade=out:st={duration - fo:.3f}:d={fo:.3f},loudnorm=I=-14:TP=-1.0:LRA=11,aresample=48000",
+             "-vn", "-c:a", "aac", "-b:a", "320k", "-ar", "48000", str(audio_track)])
     else:
-        inputs += ["-f", "lavfi", "-t", f"{duration:.3f}", "-i", "anullsrc=r=48000:cl=stereo"]
-        filters.append(f"[{idx}:a]anull[aout]")
+        run([ffmpeg, "-y", "-v", "error", "-f", "lavfi", "-t", f"{duration:.3f}", "-i",
+             "anullsrc=r=48000:cl=stereo", "-c:a", "aac", "-b:a", "128k", str(audio_track)])
+    inputs += ["-i", str(audio_track)]
 
     slug = "".join(c if c.isalnum() else "_" for c in project.get("title", "svetlana").lower()).strip("_")[:40]
     out = pdir / "exports" / f"{slug}_{fmt_key}.mp4"
     run([ffmpeg, "-y", "-v", "error", *inputs, "-filter_complex", ";".join(filters),
-         "-map", "[vout]", "-map", "[aout]", "-t", f"{duration:.3f}",
+         "-map", "[vout]", "-map", f"{idx}:a", "-t", f"{duration:.3f}",
          "-c:v", "libx264", "-preset", "medium", "-crf", "18", "-profile:v", "high",
-         "-pix_fmt", "yuv420p", "-r", str(FPS), "-c:a", "aac", "-b:a", "320k", "-ar", "48000",
+         "-x264-params", "rc-lookahead=15",
+         "-pix_fmt", "yuv420p", "-r", str(FPS), "-c:a", "copy",
          "-movflags", "+faststart", str(out)])
 
     # Miniature (juste après le drop)

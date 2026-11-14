@@ -35,7 +35,7 @@ def _spectral_features(y: np.ndarray, sr: int):
     flux = np.zeros(n_frames, dtype=np.float32)
     low = np.zeros(n_frames, dtype=np.float32)
     rms = np.zeros(n_frames, dtype=np.float32)
-    chunk = 1024
+    chunk = 256  # petits blocs : pic mémoire réduit (Render 512 Mo)
     for start in range(0, n_frames, chunk):
         stop = min(n_frames, start + chunk)
         idx = np.arange(start, stop)[:, None] * HOP + np.arange(N_FFT)[None, :]

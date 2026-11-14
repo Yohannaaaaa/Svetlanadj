@@ -163,7 +163,7 @@ class Pipeline:
                     self.pool.submit(self._resume_clip, project["id"], s["id"], job)
                 else:
                     self._shot_update(project["id"], s["id"], status="error", progress=None,
-                                      error="Interrompu par un redémarrage du serveur – relancez.")
+                                      error="Interrompu : le serveur a redémarré (souvent par manque de mémoire). Relancez ce plan.")
             r = project.get("render") or {}
             if r.get("status") == "running":
                 self.storage.update_project(project["id"], {"render": {**r, "status": "error",

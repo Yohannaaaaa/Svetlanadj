@@ -5,8 +5,9 @@ tester tout le pipeline (synchronisation, montage, logo, exports) avant de
 dépenser des crédits sur Kling / Veo.
 """
 import shutil
-import subprocess
 from pathlib import Path
+
+from ..assembly import RenderError, run
 
 FPS = 30
 
@@ -60,19 +61,23 @@ class DemoProvider:
         if fy is not None and y == "ih/2-(ih/zoom/2)":
             y = f"max(0,min(ih-ih/zoom,ih*{fy}-ih/zoom/2))"
         tint = ENV_TINT.get(shot.get("environment") or environment, "null")
-        # Image agrandie (cover) puis zoompan, sur fond flou si ratio différent
+        # Image agrandie (cover) puis zoompan. Une seule image en entrée (pas de
+        # -loop) : zoompan produit toutes les frames à partir d'elle, ce qui évite
+        # d'accumuler des images en mémoire.
+        sw, sh = int(w * 1.6) // 2 * 2, int(h * 1.6) // 2 * 2
         vf = (
-            f"scale={w * 2}:{h * 2}:force_original_aspect_ratio=increase,"
-            f"crop={w * 2}:{h * 2},setsar=1,"
+            f"scale={sw}:{sh}:force_original_aspect_ratio=increase,"
+            f"crop={sw}:{sh},setsar=1,"
             f"zoompan=z='{z}':x='{x}':y='{y}':d={frames}:s={w}x{h}:fps={FPS},"
             f"{tint},vignette=PI/5,"
             # légère pulsation de lumière pour simuler l'ambiance club
             f"eq=brightness='0.04*sin(2*PI*t*2.5)':eval=frame,format=yuv420p"
         )
-        cmd = [self.ffmpeg, "-y", "-v", "error", "-loop", "1", "-i", str(image_path),
+        cmd = [self.ffmpeg, "-y", "-v", "error", "-i", str(image_path),
                "-vf", vf, "-frames:v", str(frames), "-c:v", "libx264", "-preset", "veryfast",
                "-crf", "20", "-pix_fmt", "yuv420p", str(out_path)]
-        proc = subprocess.run(cmd, capture_output=True)
-        if proc.returncode != 0:
-            raise RuntimeError("FFmpeg (démo) : " + proc.stderr.decode(errors="ignore")[-500:])
+        try:
+            run(cmd)
+        except RenderError as e:
+            raise RuntimeError("FFmpeg (démo) : " + str(e)[-500:]) from None
         return {"path": out_path, "cost": 0.0}

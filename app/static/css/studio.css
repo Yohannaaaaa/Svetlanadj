@@ -51,7 +51,7 @@ nav { display: flex; gap: 4px; flex: 1; }
 }
 .tab:hover { color: var(--silver-hi); }
 .tab.active { color: var(--silver-hi); border-color: var(--red); box-shadow: 0 0 14px var(--red-glow) inset; }
-.logout { color: var(--muted); text-decoration: none; font-size: 18px; }
+.logout { color: var(--muted); text-decoration: none; font: 600 11px Orbitron; letter-spacing: .08em; text-transform: uppercase; }
 
 main { max-width: 1400px; margin: 0 auto; padding: 20px 24px 80px; }
 .view { display: none; }
@@ -211,3 +211,12 @@ th { color: var(--muted); font-weight: 500; }
 .login-page { display: flex; align-items: center; justify-content: center; }
 .login { width: 360px; margin-top: 18vh; }
 .login .brand { margin-bottom: 24px; align-items: center; }
+
+/* ---------- téléphone ---------- */
+@media (max-width: 700px) {
+  .media-box { max-height: 340px; }
+  .shot-body { grid-template-columns: 1fr 1fr; gap: 10px; padding: 10px; }
+  .shot-head .s-label { min-width: 0; }
+  .grid-4 { grid-template-columns: 1fr 1fr; }
+  .tab { padding: 6px 8px; font-size: 10.5px; }
+}
