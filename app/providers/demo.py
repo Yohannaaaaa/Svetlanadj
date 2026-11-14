@@ -22,6 +22,9 @@ MOTIONS = {
     "drone": ("1.4-0.35*on/{d}", "(iw-iw/zoom)*(1-on/{d})", "ih/2-(ih/zoom/2)"),
 }
 
+# Point de visée vertical selon le geste (le visage est généralement dans le tiers supérieur)
+FOCUS_Y = {"closeup_face": 0.24, "look_camera": 0.30, "headphones": 0.30, "riser": 0.38}
+
 ENV_TINT = {
     "festival": "colorbalance=rs=0.08:bs=-0.03",
     "club": "colorbalance=rs=0.12:gs=-0.04:bs=-0.04",
@@ -53,6 +56,9 @@ class DemoProvider:
         frames = int(duration * FPS)
         z, x, y = MOTIONS.get(shot.get("camera"), MOTIONS["static"])
         z, x, y = (e.format(d=frames) for e in (z, x, y))
+        fy = FOCUS_Y.get(shot.get("action"))
+        if fy is not None and y == "ih/2-(ih/zoom/2)":
+            y = f"max(0,min(ih-ih/zoom,ih*{fy}-ih/zoom/2))"
         tint = ENV_TINT.get(shot.get("environment") or environment, "null")
         # Image agrandie (cover) puis zoompan, sur fond flou si ratio différent
         vf = (

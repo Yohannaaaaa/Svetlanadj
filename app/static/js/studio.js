@@ -336,6 +336,12 @@
       $(".s-remove", n).onclick = () => { if (confirm("Supprimer ce plan ?")) { P().shots.splice(i, 1); saveShots(true); } };
       $(".s-gen-kf", n).onclick = () => runShot(s, "keyframe");
       $(".s-gen-clip", n).onclick = () => runShot(s, "clip");
+      $(".s-promote", n).onclick = async () => {
+        try {
+          const r = await api("POST", `/api/projects/${P().id}/shots/${s.id}/promote`);
+          S.state.identity = r.identity; renderIdentity(); toast("Ajoutée aux références d'identité");
+        } catch (e) { fail(e); }
+      };
       $(".s-up-kf", n).onchange = (e) => uploadShot(s, e.target.files[0], "keyframe");
       $(".s-up-clip", n).onchange = (e) => uploadShot(s, e.target.files[0], "clip");
       $(".s-takes", n).onchange = (e) => { s.clip = e.target.value; saveShots(); updateShotsLive(); };
@@ -355,6 +361,7 @@
       $(".error", n).textContent = s.error || "";
       const busy = ["generating", "keyframe_running"].includes(s.status);
       $(".s-gen-kf", n).disabled = busy; $(".s-gen-clip", n).disabled = busy;
+      $(".s-promote", n).hidden = !s.keyframe;
       const price = (vm.price_per_second || 0) * clipSeconds(s, vm);
       $(".s-gen-clip", n).textContent = (s.clip ? "Regénérer" : "Générer clip") + (price ? ` (≈${price.toFixed(2)} $)` : "");
       const kb = $(".media-box.keyframe", n), img = $("img", kb);

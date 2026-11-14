@@ -149,7 +149,8 @@ TEMPLATES = {
                 "transition_in": "fadeblack", "effects": [],
                 "keyframe_prompt": (
                     "Extreme close-up portrait of this exact woman, same face, same identity, "
-                    "eyes closed, very long wavy polar white-blonde hair, platinum white eyebrows, "
+                    "eyes closed, very long crimped wavy polar white-blonde hair, bleached platinum eyebrows, "
+                    "sun-kissed tanned skin, glossy nude-pink lips, diamond earrings, "
                     "flawless professional makeup, dark festival stage behind her with soft red haze, "
                     "cinematic rim light, photorealistic"
                 ),
@@ -163,7 +164,7 @@ TEMPLATES = {
                 "keyframe_prompt": (
                     "Medium shot of this exact woman, same face, standing behind a Pioneer DJ "
                     "CDJ-3000 and DJM-A9 booth on a huge festival stage at night, wearing professional "
-                    "DJ headphones around her neck, futuristic black and metallic silver outfit, "
+                    "rhinestone-studded DJ headphones around her neck, her signature black glossy latex corset outfit with silver studs and chains, black latex arm sleeves, "
                     "red haze and LED walls behind, photorealistic"
                 ),
                 "extra": "the camera reveals the full DJ booth with glowing Pioneer DJ decks, LED walls slowly lighting up",
@@ -174,7 +175,7 @@ TEMPLATES = {
                 "action": "riser", "camera": "orbit",
                 "transition_in": "cut", "effects": ["shake"],
                 "keyframe_prompt": (
-                    "Close medium shot of this exact woman, same face, DJ headphones on one ear, "
+                    "Close medium shot of this exact woman, same face, rhinestone-studded DJ headphones on one ear, "
                     "hand on the filter knob of a Pioneer DJ DJM-A9 mixer, intense focus, "
                     "red laser beams above, haze, festival stage, photorealistic"
                 ),
@@ -186,12 +187,47 @@ TEMPLATES = {
                 "action": "drop", "camera": "crane_up",
                 "transition_in": "fadewhite", "effects": ["beat_cuts", "zoom_punch", "beat_flash", "red_grade"],
                 "keyframe_prompt": (
-                    "Wide shot of this exact woman, same face, arms raised behind a Pioneer DJ booth "
+                    "Wide shot of this exact woman, same face, in her signature black glossy latex corset outfit with silver studs and chains, black latex arm sleeves, arms raised behind a Pioneer DJ booth "
                     "on a gigantic festival stage, explosion of red laser beams, CO2 jets, pyrotechnic "
                     "flames, massive crowd jumping in the foreground, photorealistic"
                 ),
                 "extra": "explosion of red lasers, CO2 cannons and pyro flames on the drop, the crowd jumps in unison",
             },
+        ],
+    },
+    "identity_sheet": {
+        "label": "Planche d'identité (images de référence)",
+        "title": "SVETLANA — PLANCHE D'IDENTITÉ",
+        "duration": 8.0,
+        "drop_at": 0.0,
+        "environment": "studio",
+        "logo": {"mode": "none", "at": 0.0},
+        "shots": [
+            {"label": "Face – portrait neutre", "start": 0.0, "end": 2.0, "action": "look_camera", "camera": "static",
+             "transition_in": "cut", "effects": [], "extra": "",
+             "keyframe_prompt": (
+                 "Head-and-shoulders studio portrait of this exact woman, same face, same identity, facing the camera "
+                 "straight on, neutral calm expression, eyes open looking into the lens, soft even beauty lighting, "
+                 "plain dark grey seamless background, hair falling behind the shoulders so the whole face is visible, "
+                 "sharp focus on the eyes, natural skin texture, photorealistic, 85mm lens")},
+            {"label": "Trois-quarts", "start": 2.0, "end": 4.0, "action": "look_camera", "camera": "static",
+             "transition_in": "cut", "effects": [], "extra": "",
+             "keyframe_prompt": (
+                 "Three-quarter view studio portrait of this exact woman, same face, same identity, head turned 45 degrees "
+                 "to her left, soft even lighting, plain dark grey seamless background, neutral expression, "
+                 "photorealistic, 85mm lens")},
+            {"label": "Profil", "start": 4.0, "end": 6.0, "action": "look_camera", "camera": "static",
+             "transition_in": "cut", "effects": [], "extra": "",
+             "keyframe_prompt": (
+                 "Strict side profile studio portrait of this exact woman, same face, same identity, facing right, "
+                 "soft even lighting, plain dark grey seamless background, neutral expression, photorealistic, 85mm lens")},
+            {"label": "Plan taille – tenue", "start": 6.0, "end": 8.0, "action": "look_camera", "camera": "static",
+             "transition_in": "cut", "effects": [], "extra": "",
+             "keyframe_prompt": (
+                 "Waist-up studio photo of this exact woman, same face, same identity, standing facing the camera, "
+                 "wearing her signature black glossy latex corset outfit with silver studs and chains, black latex arm "
+                 "sleeves, rhinestone-studded DJ headphones around her neck, soft even lighting, plain dark grey seamless "
+                 "background, photorealistic")},
         ],
     },
     "club_short": {

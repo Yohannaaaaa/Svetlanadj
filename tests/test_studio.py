@@ -64,3 +64,17 @@ def test_secrets_encrypted(client, app):
     assert st["configured"] and st["masked"] == "fal…7890"
     raw = (app.config["DATA_DIR"] / "secrets.enc").read_bytes()
     assert b"fal-key" not in raw
+
+
+def test_identity_sheet_promote(client, portrait):
+    client.post("/api/identity", data={"reference": (open(portrait, "rb"), "svetlana.png")},
+                content_type="multipart/form-data")
+    p = client.post("/api/projects", json={"template": "identity_sheet", "provider": "demo"}).get_json()["project"]
+    assert len(p["shots"]) == 4
+    sid = p["shots"][0]["id"]
+    assert client.post(f"/api/projects/{p['id']}/shots/{sid}/promote").status_code == 400
+    client.post(f"/api/projects/{p['id']}/shots/{sid}/keyframe")
+    wait(client, p["id"], lambda q: q["shots"][0]["status"] == "keyframe_ready", timeout=30)
+    r = client.post(f"/api/projects/{p['id']}/shots/{sid}/promote")
+    assert r.status_code == 200
+    assert len(r.get_json()["identity"]["extra_references"]) == 1

@@ -12,6 +12,19 @@ où chaque étape part d'images déjà validées. C'est ce que fait le studio.
 - Ajoutez 2 à 5 **références complémentaires** (profil gauche/droit, 3/4, plan taille avec la tenue)
   dans *Identité* : les modèles multi-images (Nano Banana, Seedream) s'en servent.
 
+### Planche d'identité (fonction du studio)
+
+L'avatar officiel de SVETLANA est une photo de scène : contre-plongée, tête inclinée, lumière rouge.
+Pour donner aux modèles une image « neutre » des traits, créez un projet **Planche d'identité** :
+il génère 4 images de référence (face, 3/4, profil, plan taille avec la tenue) sur fond gris neutre
+à partir de l'avatar. Gardez les meilleures avec le bouton **→ Référence** : elles rejoignent les
+références complémentaires utilisées pour toutes les keyframes suivantes.
+
+Traits signature à vérifier sur chaque image : cheveux blond blanc très longs et ondulés/crêpés,
+sourcils blanchis, yeux bleu glacier, peau hâlée dorée, lèvres nude brillantes, piercing au nez,
+boucles d'oreilles diamant, casque à strass, corset latex noir clouté + chaînes argent,
+manchettes latex, bracelets cristal, ongles longs blancs en amande.
+
 ## 2. Keyframe d'abord, vidéo ensuite (le plus important)
 
 Ne demandez jamais à un modèle vidéo d'*inventer* SVETLANA à partir de texte.

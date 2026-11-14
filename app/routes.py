@@ -366,6 +366,25 @@ def api_upload_shot_media(pid, sid):
     return jsonify(project=storage().update_project(pid, mut))
 
 
+@bp.post("/api/projects/<pid>/shots/<sid>/promote")
+@login_required
+def api_promote_keyframe(pid, sid):
+    """Ajoute la keyframe validée d'un plan aux références d'identité."""
+    project = get_project_or_404(pid)
+    shot = next((s for s in project["shots"] if s["id"] == sid), None)
+    if not shot or not shot.get("keyframe"):
+        return err("Ce plan n'a pas de keyframe")
+    src = storage().project_dir(pid) / "keyframes" / safe_name(shot["keyframe"])
+    if not src.exists():
+        return err("Fichier introuvable", 404)
+    st = storage()
+    name = f"extra_{int(time.time())}_{sid}{src.suffix.lower()}"
+    (st.identity_dir / name).write_bytes(src.read_bytes())
+    ident = st.get_identity()
+    refs = [n for n in ident.get("extra_references", []) if n != name] + [name]
+    return jsonify(identity=st.save_identity({"extra_references": refs[-6:]}))
+
+
 @bp.post("/api/projects/<pid>/generate_all")
 @login_required
 def api_generate_all(pid):

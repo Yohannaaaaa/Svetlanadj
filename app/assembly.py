@@ -257,7 +257,7 @@ def render_project(project: dict, pdir: Path, fmt_key: str, logo_path: Path | No
         if mode in ("drop", "both"):
             bw = int(w * (0.72 if w < h else 0.42))
             filters.append(f"{big_src}scale={bw}:-1,format=rgba,fade=in:st={at:.3f}:d=0.35:alpha=1[big]")
-            y = "(H-h)/2" if w > h else "H*0.62-h/2"
+            y = "(H-h)/2" if w > h else "H*0.80-h/2"
             layers.append(("[big]", "(W-w)/2", y, f"gte(t,{at:.3f})"))
         for k, (lbl, x, y, en) in enumerate(layers):
             out = f"[lo{k}]"

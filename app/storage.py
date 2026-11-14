@@ -47,10 +47,13 @@ class Storage:
         default = {
             "name": "SVETLANA",
             "description": (
-                "SVETLANA, a glamorous mysterious female DJ, very long wavy polar "
-                "white-blonde hair, platinum white eyebrows, luminous ice-blue eyes, "
-                "flawless professional makeup, futuristic black and metallic silver "
-                "outfit, professional DJ headphones, photorealistic"
+                "SVETLANA, a glamorous mysterious female DJ, very long voluminous crimped wavy polar "
+                "white-blonde hair, bleached platinum white eyebrows, luminous ice-blue eyes with long "
+                "lashes, sun-kissed golden tanned skin, full glossy nude-pink lips, small nose stud, "
+                "sparkling diamond drop earrings, flawless glamorous makeup, black glossy latex corset "
+                "top with silver studs and draped silver chains, long black latex arm sleeves, crystal "
+                "bracelets and diamond rings, long white almond nails, rhinestone-studded black DJ "
+                "headphones, photorealistic"
             ),
             "reference_image": None,
             "extra_references": [],
