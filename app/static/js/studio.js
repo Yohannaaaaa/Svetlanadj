@@ -135,6 +135,7 @@
     $("#ed-logo-mode").value = (p.logo || {}).mode || "drop";
     $("#ed-logo-at").value = (p.logo || {}).at ?? p.drop_at;
     $("#view-editor").classList.toggle("landscape", p.aspect === "16:9");
+    $("#demo-banner").hidden = p.provider !== "demo";
     renderAudio(); renderShots(); renderTimeline(); renderRender(); renderCost();
   }
 
@@ -357,7 +358,8 @@
     p.shots.forEach((s) => {
       const n = $(`.shot[data-id="${s.id}"]`); if (!n) return;
       const st = $(".status", n); st.className = "status " + s.status;
-      st.textContent = (STATUS[s.status] || s.status) + (s.progress ? " · " + s.progress : "");
+      const label = p.provider === "demo" && s.status === "ready" ? "aperçu démo (pas d'IA)" : (STATUS[s.status] || s.status);
+      st.textContent = label + (s.progress ? " · " + s.progress : "");
       $(".error", n).textContent = s.error || "";
       const busy = ["generating", "keyframe_running"].includes(s.status);
       $(".s-gen-kf", n).disabled = busy; $(".s-gen-clip", n).disabled = busy;
